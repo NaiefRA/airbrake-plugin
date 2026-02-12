@@ -63,7 +63,7 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
             controller = new PIDController((float) getTargetApogee(), (float) getKp(), (float) getKi(), (float) getKd(), (float) getISatmax());
         }
 
-        Airbrakes airbrakes = new SimulatedAirbrakes();
+        Airbrakes airbrakes = new SimulatedAirbrakes(getDragCoefficient());
         Noise noise = isNoisy() ? new Noise(getStddevPositionZ(), getStddevVelocityX(), getStddevVelocityY(), getStddevVelocityZ()) : null;
         conditions.getSimulationListenerList().add(new AirbrakePluginSimulationListener(airbrakes, controller, noise, getExtTime()));
     }
@@ -188,5 +188,15 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
     public void setExtTime(double time) {
         config.put("ExtTime", time);
         fireChangeEvent();
+    }
+
+    public void setDragCoefficient(double time) {
+        config.put("DragCoefficient", time);
+        fireChangeEvent();
+    }
+
+    public double getDragCoefficient() {
+        // Default Cd = 1.28 (flat plate)
+        return config.getDouble("DragCoefficient", 1.28);
     }
 }

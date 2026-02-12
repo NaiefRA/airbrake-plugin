@@ -50,7 +50,6 @@ public class AirbrakePluginConfigurator extends AbstractSwingSimulationExtension
         addRow("Noise Stddev Velocity Y", "StddevVelocityY", 1.0, UnitGroup.UNITS_VELOCITY, 0.0, 100);
         addRow("Noise Stddev Velocity Z", "StddevVelocityZ", 1.0, UnitGroup.UNITS_VELOCITY, 0.0, 100);
 
-
         // ---- Add input rows. Max values are somewhat arbitrary for those that have no actual max
         addRow("Target apogee", "TargetApogee", 1.0, UnitGroup.UNITS_DISTANCE, 0.0, 100000);
 
@@ -63,6 +62,8 @@ public class AirbrakePluginConfigurator extends AbstractSwingSimulationExtension
         addRow("Always-open extension %", "AlwaysOpenExt", 1.0, UnitGroup.UNITS_RELATIVE, 0.0, 1);
 
         addRow("Extend lockout time", "ExtTime", 1.0, UnitGroup.UNITS_FLIGHT_TIME, 0.0, 30.0);
+        
+        addRow("Coefficient of Drag (default 1.28)", "DragCoefficient", 1.0, UnitGroup.UNITS_COEFFICIENT, 0.0, 30.0);
 
         return panel;
     }

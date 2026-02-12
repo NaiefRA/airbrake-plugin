@@ -93,27 +93,32 @@ public class AirbrakePluginSimulationListener extends AbstractSimulationListener
      */
     @Override
     public AerodynamicForces postAerodynamicCalculation(SimulationStatus status, AerodynamicForces forces) throws SimulationException {
-        final double velocityZ = status.getRocketVelocity().z;
-
         // Override CD only during coast, and until velocity is too small for the drag tabulation to be accurate
         if (isExtensionAllowed(status)) {
             // Get latest flight conditions and airbrake extension
-            FlightDataBranch flightData = status.getFlightData();
-            final double airbrakeExt = flightData.getLast(airbrakeExtDataType);
-
+            final double velocityZ = status.getRocketVelocity().z;
+            final double extension = status.getFlightData().getLast(airbrakeExtDataType);
             final double altitude = status.getRocketPosition().z + status.getSimulationConditions().getLaunchSite().getAltitude();
 
-            double dragForce = airbrakes.calculateDragForce(airbrakeExt, velocityZ, altitude);
+            double airbrakesDragForce = airbrakes.calculateDragForce(extension, velocityZ, altitude);
 
-            double velocity2 = status.getRocketVelocity().length2();
-            double dynP = (0.5 * flightConditions.getAtmosphericConditions().getDensity() * velocity2);
+
+            // now calculating Cd from the airbrakes (using force calculated inputted (for flat plate theory))
+            double density = flightConditions.getAtmosphericConditions().getDensity();
             double refArea = flightConditions.getRefArea();
-            double cDAxial = dragForce / dynP / refArea;
 
+            double dynamicPressure = 0.5 * density * status.getRocketVelocity().length2();
+            double rocketCd = forces.getCDaxial(); // cd from openrocket
+
+            if(dynamicPressure > 0.0001){
+                rocketCd = rocketCd + (airbrakesDragForce/(dynamicPressure*refArea));
+            }
+
+ 
             // Note: this calculation isn't actually CDAxial, but it's necessary to override CDAxial
             // since OR uses CDAxial for its proceeding calculations. Experiments showed the diff between our
             // "CDAxial" and actual CDAxial (which accounts for AOA) is insignificant so this is fine.
-            forces.setCDaxial(cDAxial);
+            forces.setCDaxial(rocketCd);
         }
 
         return forces;

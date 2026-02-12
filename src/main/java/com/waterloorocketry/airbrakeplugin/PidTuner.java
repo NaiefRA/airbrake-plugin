@@ -39,7 +39,7 @@ public class PidTuner {
     /**
      * PID controller target apogee (meters)
      */
-    private static final float TARGET_APOGEE_M = 6660;
+    private static final float TARGET_APOGEE_M = 3048;
     /**
      * PID params to tune
      */
@@ -61,7 +61,7 @@ public class PidTuner {
         Simulation simulation = new Simulation(doc, doc.getRocket());
 
         Controller controller = new PIDController(TARGET_APOGEE_M, Kp, Ki, Kd, 10);
-        Airbrakes airbrakes = new SimulatedAirbrakes();
+        Airbrakes airbrakes = new SimulatedAirbrakes(1.28);
         SimulationListener listener = new AirbrakePluginSimulationListener(airbrakes, controller, new Noise(10, 0.5, 0.5, 2), 9);
 
         simulation.simulate(listener);
