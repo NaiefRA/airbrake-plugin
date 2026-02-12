@@ -18,11 +18,15 @@ import net.sf.openrocket.unit.UnitGroup;
  * Connect to a simulation and listen for various events during the simulation.
  */
 public class AirbrakePluginSimulationListener extends AbstractSimulationListener {
+    private double lastPrintTime = 0;
+
     private final Airbrakes airbrakes;
     private final Controller controller;
     private final Noise noise;
-    public static final FlightDataType airbrakeExtDataType = FlightDataType.getType("airbrakeExt", "airbrakeExt", UnitGroup.UNITS_RELATIVE);
-    public static final FlightDataType predictedApogeeDataType = FlightDataType.getType("predictedApogee", "predictedApogee", UnitGroup.UNITS_DISTANCE);
+    public static final FlightDataType airbrakeExtDataType = FlightDataType.getType("airbrakeExt", "airbrakeExt",
+            UnitGroup.UNITS_RELATIVE);
+    public static final FlightDataType predictedApogeeDataType = FlightDataType.getType("predictedApogee",
+            "predictedApogee", UnitGroup.UNITS_DISTANCE);
     private double ext = 0.0;
     private final double extTime;
 
@@ -34,13 +38,15 @@ public class AirbrakePluginSimulationListener extends AbstractSimulationListener
         this.extTime = extTime;
     }
 
-    // Airbrakes only allowed between the given time (default 9 s) and while vertical velocity > 34 m/s
+    // Airbrakes only allowed between the given time (default 9 s) and while
+    // vertical velocity > 34 m/s
     private boolean isExtensionAllowed(SimulationStatus status) {
         return status.getSimulationTime() > extTime && status.getRocketVelocity().z > 34.0;
     }
 
     /**
      * Runs before each timestep.
+     * 
      * @param status
      * @return
      */
@@ -58,7 +64,8 @@ public class AirbrakePluginSimulationListener extends AbstractSimulationListener
             data.positionZ = r.nextGaussian(data.positionZ, noise.getStddevPositionZ());
         }
 
-        // Only run controller during coast phase. If not in coast, still set ext to 0 (better than NaN)
+        // Only run controller during coast phase. If not in coast, still set ext to 0
+        // (better than NaN)
         if (isExtensionAllowed(status)) {
             ext = controller.calculateTargetExt(data, status.getSimulationTime(), ext);
             if (!(0.0 <= ext && ext <= 1.0)) {
@@ -80,45 +87,71 @@ public class AirbrakePluginSimulationListener extends AbstractSimulationListener
      */
     private FlightConditions flightConditions = null;
 
-    // We can't look at status.getFlightData() for anything except extension instead because it would
+    // We can't look at status.getFlightData() for anything except extension instead
+    // because it would
     // apply to the last timestep
     @Override
-    public FlightConditions postFlightConditions(SimulationStatus status, FlightConditions flightConditions) throws SimulationException {
+    public FlightConditions postFlightConditions(SimulationStatus status, FlightConditions flightConditions)
+            throws SimulationException {
         this.flightConditions = flightConditions;
         return flightConditions;
     }
 
     /**
-     * Overrides the coefficient of drag after the aerodynamic calculations are done each timestep.
+     * Overrides the coefficient of drag after the aerodynamic calculations are done
+     * each timestep.
      */
     @Override
-    public AerodynamicForces postAerodynamicCalculation(SimulationStatus status, AerodynamicForces forces) throws SimulationException {
-        // Override CD only during coast, and until velocity is too small for the drag tabulation to be accurate
+    public AerodynamicForces postAerodynamicCalculation(SimulationStatus status, AerodynamicForces forces)
+            throws SimulationException {
+
+        double extension = 0;
+        double airbrakesDragForce = 0;
+        double airbrakesCd = 0;
+        double rocketCd = forces.getCDaxial();
+
         if (isExtensionAllowed(status)) {
             // Get latest flight conditions and airbrake extension
             final double velocityZ = status.getRocketVelocity().z;
-            final double extension = status.getFlightData().getLast(airbrakeExtDataType);
-            final double altitude = status.getRocketPosition().z + status.getSimulationConditions().getLaunchSite().getAltitude();
+            extension = status.getFlightData().getLast(airbrakeExtDataType);
+            final double altitude = status.getRocketPosition().z
+                    + status.getSimulationConditions().getLaunchSite().getAltitude();
 
-            double airbrakesDragForce = airbrakes.calculateDragForce(extension, velocityZ, altitude);
+            airbrakesDragForce = airbrakes.calculateDragForce(extension, velocityZ, altitude);
 
-
-            // now calculating Cd from the airbrakes (using force calculated inputted (for flat plate theory))
+            // now calculating Cd from the airbrakes (using force calculated inputted (for
+            // flat plate theory))
             double density = flightConditions.getAtmosphericConditions().getDensity();
             double refArea = flightConditions.getRefArea();
 
-            double dynamicPressure = 0.5 * density * status.getRocketVelocity().length2();
-            double rocketCd = forces.getCDaxial(); // cd from openrocket
+            double velocitySq = status.getRocketVelocity().length2();
 
-            if(dynamicPressure > 0.0001){
-                rocketCd = rocketCd + (airbrakesDragForce/(dynamicPressure*refArea));
+            double dynamicPressure = 0.5 * density * velocitySq;
+            double totalCd = forces.getCDaxial(); // cd from openrocket
+
+            if (dynamicPressure > 0.0001) {
+                airbrakesCd = (airbrakesDragForce / (dynamicPressure * refArea));
+
+                totalCd = totalCd + airbrakesCd;
             }
 
- 
-            // Note: this calculation isn't actually CDAxial, but it's necessary to override CDAxial
-            // since OR uses CDAxial for its proceeding calculations. Experiments showed the diff between our
-            // "CDAxial" and actual CDAxial (which accounts for AOA) is insignificant so this is fine.
-            forces.setCDaxial(rocketCd);
+            // OR CD + Calculated Airbrakes CD
+            forces.setCDaxial(totalCd);
+        }
+
+        // printing
+        if (status.getSimulationTime() - lastPrintTime > 0.2) {
+            System.out.printf(
+                    "Time: %6.2fs | Extended: %-5b | Ext: %3.0f%% | Drag Force: %6.2f N | Added Cd: %6.4f | Rocket Cd: %6.4f | Total Cd: %6.4f%n",
+                    status.getSimulationTime(), // Time
+                    extension > 0, // Whether or not airbrakes are extended (True/False)
+                    extension * 100, // Extension percentage (0-100%)
+                    airbrakesDragForce, // Drag Force in Newtons
+                    airbrakesCd, // The Coefficient added to the rocket
+                    rocketCd, // OR Cd
+                    forces.getCDaxial() // total Cd
+            );
+            lastPrintTime = status.getSimulationTime();
         }
 
         return forces;

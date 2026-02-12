@@ -62,16 +62,17 @@ public class PidTuner {
 
         Controller controller = new PIDController(TARGET_APOGEE_M, Kp, Ki, Kd, 10);
         Airbrakes airbrakes = new SimulatedAirbrakes(1.28);
-        SimulationListener listener = new AirbrakePluginSimulationListener(airbrakes, controller, new Noise(10, 0.5, 0.5, 2), 9);
+        SimulationListener listener = new AirbrakePluginSimulationListener(airbrakes, controller,
+                new Noise(10, 0.5, 0.5, 2), 9);
 
         simulation.simulate(listener);
         System.out.println("max altitude: " + simulation.getSimulatedData().getMaxAltitude());
 
         PlotConfiguration config = new PlotConfiguration("PID");
 
-//        config.addPlotDataType(FlightDataType.TYPE_ALTITUDE, 0);
-//        config.addPlotDataType(FlightDataType.TYPE_VELOCITY_Z);
-//        config.addPlotDataType(FlightDataType.TYPE_ACCELERATION_Z);
+        // config.addPlotDataType(FlightDataType.TYPE_ALTITUDE, 0);
+        // config.addPlotDataType(FlightDataType.TYPE_VELOCITY_Z);
+        // config.addPlotDataType(FlightDataType.TYPE_ACCELERATION_Z);
         config.addPlotDataType(AirbrakePluginSimulationListener.airbrakeExtDataType);
         config.setEvent(FlightEvent.Type.IGNITION, true);
         config.setEvent(FlightEvent.Type.BURNOUT, true);
@@ -93,7 +94,8 @@ public class PidTuner {
     /**
      * Inject required dependencies for OpenRocket, allowing us to run simulations
      * programmatically.
-     * This runs the same code as for starting up a GUI version of OpenRocket, making it easier to make manual
+     * This runs the same code as for starting up a GUI version of OpenRocket,
+     * making it easier to make manual
      * simulation runs automatic.
      */
     private static void initializeOpenRocket() {
@@ -107,6 +109,7 @@ public class PidTuner {
 
     /**
      * Get the preferences of OpenRocket Swing
+     * 
      * @return Preferences object
      */
     private static SwingPreferences getOpenRocketPreferences() {
