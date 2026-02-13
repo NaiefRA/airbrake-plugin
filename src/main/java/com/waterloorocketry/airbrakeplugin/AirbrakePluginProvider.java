@@ -4,7 +4,6 @@ package com.waterloorocketry.airbrakeplugin;
 import net.sf.openrocket.plugin.Plugin;
 import net.sf.openrocket.simulation.extension.AbstractSimulationExtensionProvider;
 
-
 @Plugin
 public class AirbrakePluginProvider extends AbstractSimulationExtensionProvider {
     /**
