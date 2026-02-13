@@ -1,3 +1,5 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 plugins {
     id 'java'
 }
@@ -13,7 +15,8 @@ repositories {
 }
 
 dependencies {
-    implementation name: 'OpenRocket', version: '23.09', group: 'net.sf.openrocket'
+    implementation name: 'OpenRocket-23.09', version: '23.09', group: 'net.sf.openrocket'
+
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
@@ -23,13 +26,14 @@ test {
     useJUnitPlatform()
 }
 
-// template from: https://github.com/stwind/gradle-jni
-
+// Ensure the JAR includes the native library at the root
+// This allows LibraryLoader.java to find it via getResource("/lib...")
 sourceSets {
     main {
         resources {
-            srcDirs 'build/natives/bin'
+            // Include the compiled native libraries
             srcDirs 'build/natives/lib'
+            srcDirs 'build/natives/bin'
         }
     }
 }
@@ -42,33 +46,45 @@ task compileJNI {
     dependsOn compileJava
 
     doLast {
+        def buildDir = file('build/natives')
+        buildDir.mkdirs()
+
+        // 1. Configure CMake (Platform Detection)
         exec {
-            mkdir 'build/natives'
-            workingDir 'build/natives'
-            commandLine 'cmake', '-G', 'Unix Makefiles', '../..'
+            workingDir buildDir
+            if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+                // Windows: Use defaults (usually Visual Studio) or specify "MinGW Makefiles" if using MinGW
+                commandLine 'cmake', '../..'
+            } else {
+                // Linux/Mac: Use Unix Makefiles
+                commandLine 'cmake', '-G', 'Unix Makefiles', '../..'
+            }
         }
+
+        // 2. Build the native library using CMake's abstraction (works for Make, MSBuild, Ninja, etc.)
         exec {
-            workingDir 'build/natives'
-            commandLine 'make'
+            workingDir buildDir
+            commandLine 'cmake', '--build', '.', '--config', 'Release'
         }
     }
 }
 
 clean.doFirst {
     delete fileTree('src/main/include') {
-        include 'jni_*.h'
+        include 'com_waterloorocketry_airbrakeplugin_jni_ProcessorCalculations*.h'
     }
 }
 
+// Ensure natives are compiled before processing resources (so they get added to the JAR)
 processResources {
     dependsOn compileJNI
 }
 
+// OPTIONAL: Run task for testing inside Gradle
 tasks.register('run', JavaExec) {
     dependsOn jar
     mainClass = 'net.sf.openrocket.startup.OpenRocket'
     classpath = files('./OpenRocket-23.09.jar', tasks.jar)
-    systemProperty 'java.library.path', 'build/natives/lib'
 }
 
 tasks.register('tune', JavaExec) {
@@ -76,5 +92,3 @@ tasks.register('tune', JavaExec) {
     mainClass = 'com.waterloorocketry.airbrakeplugin.PidTuner'
     classpath = files('./OpenRocket-23.09.jar', tasks.jar)
 }
-
-tasks.test.systemProperty 'java.library.path', 'build/natives/lib'
