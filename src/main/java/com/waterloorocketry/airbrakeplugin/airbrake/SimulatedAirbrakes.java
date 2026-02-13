@@ -73,6 +73,6 @@ public class SimulatedAirbrakes implements Airbrakes {
 
         
 
-        return 0.5 * rho * velocity * velocity * this.cd * (airbrakesArea * Math.sin(theta));
+        return 0.5 * rho * velocity * velocity * this.cd * (airbrakesArea);
     }
 }
