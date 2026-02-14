@@ -14,7 +14,6 @@
 //     }
 // }
 
-
 // package com.waterloorocketry.airbrakeplugin.airbrake;
 
 // import com.waterloorocketry.airbrakeplugin.simulated.AirDensity;
@@ -33,10 +32,7 @@
 //         // 1. Get Air Density at current altitude (using existing project utility)
 //         double density = AirDensity.getAirDensityAtAltitude(altitude);
 
-
 //         // TODO  CALC CD from extension
-
-
 
 //         // 3. Calculate Drag Force
 //         // Formula: 1/2 * density * velocity^2 * Cd * Area
@@ -44,16 +40,13 @@
 //     }
 // }
 
-
-
 package com.waterloorocketry.airbrakeplugin.airbrake;
 
 import com.waterloorocketry.airbrakeplugin.simulated.AirDensity;
 
-
 /**
-    Airbrakes using flat plate theory    
-*/
+ * Airbrakes using flat plate theory
+ */
 public class SimulatedAirbrakes implements Airbrakes {
 
     private final double cd;
@@ -65,14 +58,13 @@ public class SimulatedAirbrakes implements Airbrakes {
     @Override
     public double calculateDragForce(double extension, double velocity, double altitude) {
 
-        double airbrakesArea  = 0.007322 * 4;
+        double airbrakesArea = 0.007322 * 4;
         double maxAngle = Math.toRadians(60);
 
         double theta = extension * maxAngle;
         double rho = AirDensity.getAirDensityAtAltitude(altitude);
-        double CD= 2.5*Math.Sin(theta)*Sin(theta)+0.074*Math.Cos(theta);
-        
+        double CD = 2.5 * Math.sin(theta) * Math.sin(theta) + 0.074 * Math.cos(theta);
 
-        return 0.5 * rho * velocity * velocity * this.cd * (airbrakesArea)*CD;
+        return 0.5 * rho * velocity * velocity * (airbrakesArea) * CD;
     }
 }
