@@ -4,18 +4,23 @@ import com.waterloorocketry.airbrakeplugin.jni.ProcessorCalculations;
 
 public class PIDController implements Controller {
 
-    // Tuning Parameters
+    // -------------------------
+    // Fields
+    // -------------------------
+
     private final float targetAltitude;
     private final float Kp;
     private final float Ki;
     private final float Kd;
-    private final float iLimit; // Integral Saturation Limit
+    private final float iLimit;
 
-    // State Variables (Memory)
     private double lastError = 0;
     private double integralSum = 0;
-    private double lastTime = -1; // -1 indicates first run
+    private double lastTime = -1;
 
+    // -------------------------
+    // Constructor
+    // -------------------------
     public PIDController(float targetAltitude, float Kp, float Ki, float Kd, float iLimit) {
         this.targetAltitude = targetAltitude;
         this.Kp = Kp;
@@ -24,66 +29,86 @@ public class PIDController implements Controller {
         this.iLimit = iLimit;
     }
 
+    // -------------------------
+    // PID Controller Method
+    // -------------------------
     @Override
     public double calculateTargetExt(RocketState rocketState, double currentTime, double currentExtension) {
-        // 1. Get Prediction (Keep using C++ for this as the math is complex)
-        // We calculate "vX" (Total Velocity) to pass to the predictor
-        double vX = Math
-                .sqrt(rocketState.velocityX * rocketState.velocityX + rocketState.velocityY * rocketState.velocityY);
 
-        // This function predicts where we will go if we DO NOTHING (Coast)
+        // Compute lateral velocity magnitude
+        double vX = Math.sqrt(
+            rocketState.velocityX * rocketState.velocityX +
+            rocketState.velocityY * rocketState.velocityY
+        );
+
+        // Predict where the rocket will coast to
         float predictedApogee = ProcessorCalculations.getMaxAltitude(
-                (float) rocketState.velocityZ,
-                (float) vX,
-                (float) rocketState.positionZ);
+            (float) rocketState.velocityZ,
+            (float) vX,
+            (float) rocketState.positionZ
+        );
 
-        // 2. Calculate Time Delta (dt)
-        // We need to know how much time passed since the last loop to calculate
-        // Integral and Derivative
+        // First loop iteration
         if (lastTime == -1) {
             lastTime = currentTime;
-            return 0.0; // First step, no action
+            return 0.0;
         }
+
+        // Compute dt
         double dt = currentTime - lastTime;
         if (dt <= 0)
-            return currentExtension; // Prevent divide by zero if sim pauses
+            return currentExtension;
 
-        // 3. Calculate Error
-        // Error is positive if we are going too high (Predicted > Target)
+        // Error term (positive means overshooting target)
         double error = predictedApogee - targetAltitude;
 
-        // 4. Proportional Term
+        // PID Components
         double pTerm = Kp * error;
 
-        // 5. Integral Term (Accumulated Error)
+        // Integral term with anti-windup
         integralSum += error * dt;
-
-        // Anti-Windup (Clamping the integral so it doesn't grow infinite)
-        if (integralSum > iLimit)
-            integralSum = iLimit;
-        if (integralSum < -iLimit)
-            integralSum = -iLimit;
-
+        if (integralSum > iLimit) integralSum = iLimit;
+        if (integralSum < -iLimit) integralSum = -iLimit;
         double iTerm = Ki * integralSum;
 
-        // 6. Derivative Term (Rate of change of error)
-        // How fast is the error shrinking or growing?
+        // Derivative term
         double derivative = (error - lastError) / dt;
         double dTerm = Kd * derivative;
 
-        // 7. Total Output
+        // PID Output (0–1 airbrake extension)
         double output = pTerm + iTerm + dTerm;
 
-        // 8. Update State for next loop
         lastError = error;
         lastTime = currentTime;
 
-        // 9. Clamp Output (Airbrakes can only be 0% to 100%)
-        if (output > 1.0)
-            output = 1.0;
-        if (output < 0.0)
-            output = 0.0;
+        // Clamp output to physical limits
+        if (output > 1.0) output = 1.0;
+        if (output < 0.0) output = 0.0;
+
+        // -------------------------
+        //  STABILITY FILTERS
+        // -------------------------
+
+        double extensionError = output - currentExtension;
+
+  
+        // double th = 2;  // 2%
+        // if (Math.abs(extensionError) < th) {
+        //     return currentExtension;
+        // }
+
+       
+        double maxRatePerSecond = 0.20;  // 20% per second
+        double maxStep = maxRatePerSecond * dt;
+
+        if (extensionError > 0.04)
+            return currentExtension + 0.04;
+
+        if (extensionError < -0.04)
+            return currentExtension - 0.04;
+
 
         return output;
     }
 }
+
