@@ -60,21 +60,13 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
     public void initialize(SimulationConditions conditions) throws SimulationException {
         Controller controller;
 
-        // Use either PID or always-open controller depending on the configuration
-        // setting
-        if (isAlwaysOpen()) {
-            controller = new AlwaysOpenController(getAlwaysOpenExt());
-        } else {
-            controller = new PIDController((float) getTargetApogee(), (float) getKp(), (float) getKi(), (float) getKd(),
-                    (float) getISatmax());
-        }
+        controller = new PIDController((float) getTargetApogee(), (float) getKp(), (float) getKi(), (float) getKd(),
+                (float) getISatmax());
 
-        Airbrakes airbrakes = new SimulatedAirbrakes(getDragCoefficient());
-        Noise noise = isNoisy()
-                ? new Noise(getStddevPositionZ(), getStddevVelocityX(), getStddevVelocityY(), getStddevVelocityZ())
-                : null;
+        Airbrakes airbrakes = new SimulatedAirbrakes();
+
         conditions.getSimulationListenerList()
-                .add(new AirbrakePluginSimulationListener(airbrakes, controller, noise, getExtTime()));
+                .add(new AirbrakePluginSimulationListener(airbrakes, controller, getExtTime(), getRateLimit()));
     }
 
     //
@@ -82,60 +74,6 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
     // config panel
     // The setters are used indirectly in AirbrakePluginConfigurator
     //
-
-    public boolean isAlwaysOpen() {
-        return config.getBoolean("alwaysOpen", false);
-    }
-
-    public void setAlwaysOpen(boolean value) {
-        config.put("alwaysOpen", value);
-        fireChangeEvent();
-    }
-
-    public boolean isNoisy() {
-        return config.getBoolean("noisy", false);
-    }
-
-    public void setNoisy(boolean value) {
-        config.put("noisy", value);
-        fireChangeEvent();
-    }
-
-    public double getStddevPositionZ() {
-        return config.getDouble("stddevPositionZ", 10.0);
-    }
-
-    public void setStddevPositionZ(double value) {
-        config.put("stddevPositionZ", value);
-        fireChangeEvent();
-    }
-
-    public double getStddevVelocityX() {
-        return config.getDouble("stddevVelocityX", 0.5);
-    }
-
-    public void setStddevVelocityX(double value) {
-        config.put("stddevVelocityX", value);
-        fireChangeEvent();
-    }
-
-    public double getStddevVelocityY() {
-        return config.getDouble("stddevVelocityY", 0.5);
-    }
-
-    public void setStddevVelocityY(double value) {
-        config.put("stddevVelocityY", value);
-        fireChangeEvent();
-    }
-
-    public double getStddevVelocityZ() {
-        return config.getDouble("stddevVelocityZ", 2.0);
-    }
-
-    public void setStddevVelocityZ(double value) {
-        config.put("stddevVelocityZ", value);
-        fireChangeEvent();
-    }
 
     public double getTargetApogee() {
         return config.getDouble("targetApogee", 3048.0);
@@ -147,7 +85,7 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
     }
 
     public double getKp() {
-        return config.getDouble("Kp", 0.0);
+        return config.getDouble("Kp", 0.00143);
     }
 
     public void setKp(double Kp) {
@@ -156,7 +94,7 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
     }
 
     public double getKi() {
-        return config.getDouble("Ki", 0.0);
+        return config.getDouble("Ki", 0.0008);
     }
 
     public void setKi(double Ki) {
@@ -182,17 +120,8 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
         fireChangeEvent();
     }
 
-    public double getAlwaysOpenExt() {
-        return config.getDouble("alwaysOpenExt", 0.0);
-    }
-
-    public void setAlwaysOpenExt(double ext) {
-        config.put("alwaysOpenExt", ext);
-        fireChangeEvent();
-    }
-
     public double getExtTime() {
-        return config.getDouble("ExtTime", 9.0);
+        return config.getDouble("ExtTime", 8.0);
     }
 
     public void setExtTime(double time) {
@@ -200,13 +129,12 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
         fireChangeEvent();
     }
 
-    public void setDragCoefficient(double time) {
-        config.put("DragCoefficient", time);
+    public void setRateLimit(double time) {
+        config.put("RateLimit", time);
         fireChangeEvent();
     }
 
-    public double getDragCoefficient() {
-        // Default Cd = 1.28 (flat plate)
-        return config.getDouble("DragCoefficient", 1.28);
+    public double getRateLimit() {
+        return config.getDouble("RateLimit", 0.033);
     }
 }

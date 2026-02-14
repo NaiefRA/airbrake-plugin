@@ -49,10 +49,7 @@ import com.waterloorocketry.airbrakeplugin.simulated.AirDensity;
  */
 public class SimulatedAirbrakes implements Airbrakes {
 
-    private final double cd;
-
-    public SimulatedAirbrakes(double cd) {
-        this.cd = cd;
+    public SimulatedAirbrakes() {
     }
 
     @Override

@@ -28,29 +28,8 @@ public class AirbrakePluginConfigurator extends AbstractSwingSimulationExtension
         this.panel = panel;
         this.extension = extension;
 
-        // ------------------ Add alwaysOpen mode checkbox ------------------
-        panel.add(new JLabel("Enable Always-Open mode (no PID):"));
-
-        // Passing `extension` into BooleanModel allows this config panel to
-        // use the getter/setter for AlwaysOpen which are defined in AirbrakePlugin
-        final BooleanModel alwaysOpen = new BooleanModel(extension, "AlwaysOpen");
-
-        JCheckBox alwaysOpenCheckbox = new JCheckBox(alwaysOpen);
-        panel.add(alwaysOpenCheckbox, "wrap");
-
-        // ------------------ Add noisy mode checkbox ------------------
-        panel.add(new JLabel("Enable Faking Noisy Data:"));
-        final BooleanModel noisy = new BooleanModel(extension, "Noisy");
-
-        JCheckBox noisyCheckbox = new JCheckBox(noisy);
-        panel.add(noisyCheckbox, "wrap");
-
-        addRow("Noise Stddev Altitude", "StddevPositionZ", 1.0, UnitGroup.UNITS_DISTANCE, 0.0, 100);
-        addRow("Noise Stddev Velocity X", "StddevVelocityX", 1.0, UnitGroup.UNITS_VELOCITY, 0.0, 100);
-        addRow("Noise Stddev Velocity Y", "StddevVelocityY", 1.0, UnitGroup.UNITS_VELOCITY, 0.0, 100);
-        addRow("Noise Stddev Velocity Z", "StddevVelocityZ", 1.0, UnitGroup.UNITS_VELOCITY, 0.0, 100);
-
-        // ---- Add input rows. Max values are somewhat arbitrary for those that have no actual max
+        // ---- Add input rows. Max values are somewhat arbitrary for those that have no
+        // actual max
         addRow("Target apogee", "TargetApogee", 1.0, UnitGroup.UNITS_DISTANCE, 0.0, 100000);
 
         addRow("Kp*1000", "Kp", 1000.0, UnitGroup.UNITS_COEFFICIENT, 0.0, 100);
@@ -59,19 +38,20 @@ public class AirbrakePluginConfigurator extends AbstractSwingSimulationExtension
         addRow("ISatmax", "ISatmax", 1.0, UnitGroup.UNITS_COEFFICIENT, 0.0, 100);
 
         // Extension must be within 0-100%
-        addRow("Always-open extension %", "AlwaysOpenExt", 1.0, UnitGroup.UNITS_RELATIVE, 0.0, 1);
 
         addRow("Extend lockout time", "ExtTime", 1.0, UnitGroup.UNITS_FLIGHT_TIME, 0.0, 30.0);
-        
-        addRow("Coefficient of Drag (default 1.28)", "DragCoefficient", 1.0, UnitGroup.UNITS_COEFFICIENT, 0.0, 30.0);
+
+        addRow("Rate Limit", "RateLimit", 1.0, UnitGroup.UNITS_COEFFICIENT, 0.0, 30.0);
 
         return panel;
     }
 
     /**
-     * Helper to build an input box + spinner + unit selector. Copied from OR examples
-     * @param prompt for the JLabel
-     * @param fieldName exact name used in the getter/setter for this var
+     * Helper to build an input box + spinner + unit selector. Copied from OR
+     * examples
+     * 
+     * @param prompt     for the JLabel
+     * @param fieldName  exact name used in the getter/setter for this var
      * @param multiplier
      * @param units
      * @param min

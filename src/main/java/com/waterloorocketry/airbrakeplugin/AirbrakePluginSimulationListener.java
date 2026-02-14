@@ -22,20 +22,21 @@ public class AirbrakePluginSimulationListener extends AbstractSimulationListener
 
     private final Airbrakes airbrakes;
     private final Controller controller;
-    private final Noise noise;
     public static final FlightDataType airbrakeExtDataType = FlightDataType.getType("airbrakeExt", "airbrakeExt",
             UnitGroup.UNITS_RELATIVE);
     public static final FlightDataType predictedApogeeDataType = FlightDataType.getType("predictedApogee",
             "predictedApogee", UnitGroup.UNITS_DISTANCE);
     private double ext = 0.0;
     private final double extTime;
+    private final double rateLimit;
 
-    public AirbrakePluginSimulationListener(Airbrakes airbrakes, Controller controller, Noise noise, double extTime) {
+    public AirbrakePluginSimulationListener(Airbrakes airbrakes, Controller controller, double extTime,
+            double rateLimit) {
         super();
         this.airbrakes = airbrakes;
         this.controller = controller;
-        this.noise = noise;
         this.extTime = extTime;
+        this.rateLimit = rateLimit; // 3. SAVE IT
     }
 
     // Airbrakes only allowed between the given time (default 9 s) and while
@@ -56,18 +57,11 @@ public class AirbrakePluginSimulationListener extends AbstractSimulationListener
         Controller.RocketState data = new Controller.RocketState(status);
 
         // Add gaussian noise to the "measured" state data if enabled
-        if (noise != null) {
-            java.util.Random r = new java.util.Random();
-            data.velocityX = r.nextGaussian(data.velocityX, noise.getStddevVelocityX());
-            data.velocityY = r.nextGaussian(data.velocityY, noise.getStddevVelocityY());
-            data.velocityZ = r.nextGaussian(data.velocityZ, noise.getStddevVelocityZ());
-            data.positionZ = r.nextGaussian(data.positionZ, noise.getStddevPositionZ());
-        }
 
         // Only run controller during coast phase. If not in coast, still set ext to 0
         // (better than NaN)
         if (isExtensionAllowed(status)) {
-            ext = controller.calculateTargetExt(data, status.getSimulationTime(), ext);
+            ext = controller.calculateTargetExt(data, status.getSimulationTime(), ext, rateLimit);
             if (!(0.0 <= ext && ext <= 1.0)) {
                 throw new IndexOutOfBoundsException("airbrakes extension amount was not from 0 to 1");
             }
@@ -109,7 +103,6 @@ public class AirbrakePluginSimulationListener extends AbstractSimulationListener
         double airbrakesDragForce = 0;
         double airbrakesCd = 0;
         double rocketCd = forces.getCDaxial();
-        double totalDrag = 0;
 
         if (isExtensionAllowed(status)) {
             // Get latest flight conditions and airbrake extension

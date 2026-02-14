@@ -33,20 +33,19 @@ public class PIDController implements Controller {
     // PID Controller Method
     // -------------------------
     @Override
-    public double calculateTargetExt(RocketState rocketState, double currentTime, double currentExtension) {
+    public double calculateTargetExt(RocketState rocketState, double currentTime, double currentExtension,
+            double rateLimit) {
 
         // Compute lateral velocity magnitude
         double vX = Math.sqrt(
-            rocketState.velocityX * rocketState.velocityX +
-            rocketState.velocityY * rocketState.velocityY
-        );
+                rocketState.velocityX * rocketState.velocityX +
+                        rocketState.velocityY * rocketState.velocityY);
 
         // Predict where the rocket will coast to
         float predictedApogee = ProcessorCalculations.getMaxAltitude(
-            (float) rocketState.velocityZ,
-            (float) vX,
-            (float) rocketState.positionZ
-        );
+                (float) rocketState.velocityZ,
+                (float) vX,
+                (float) rocketState.positionZ);
 
         // First loop iteration
         if (lastTime == -1) {
@@ -67,8 +66,10 @@ public class PIDController implements Controller {
 
         // Integral term with anti-windup
         integralSum += error * dt;
-        if (integralSum > iLimit) integralSum = iLimit;
-        if (integralSum < -iLimit) integralSum = -iLimit;
+        if (integralSum > iLimit)
+            integralSum = iLimit;
+        if (integralSum < -iLimit)
+            integralSum = -iLimit;
         double iTerm = Ki * integralSum;
 
         // Derivative term
@@ -82,33 +83,31 @@ public class PIDController implements Controller {
         lastTime = currentTime;
 
         // Clamp output to physical limits
-        if (output > 1.0) output = 1.0;
-        if (output < 0.0) output = 0.0;
+        if (output > 1.0)
+            output = 1.0;
+        if (output < 0.0)
+            output = 0.0;
 
         // -------------------------
-        //  STABILITY FILTERS
+        // STABILITY FILTERS
         // -------------------------
 
         double extensionError = output - currentExtension;
 
-  
-        // double th = 2;  // 2%
+        // double th = 2; // 2%
         // if (Math.abs(extensionError) < th) {
-        //     return currentExtension;
+        // return currentExtension;
         // }
 
-       
-        double maxRatePerSecond = 0.20;  // 20% per second
+        double maxRatePerSecond = 0.20; // 20% per second
         double maxStep = maxRatePerSecond * dt;
 
-        if (extensionError > 0.04)
-            return currentExtension + 0.04;
+        if (extensionError > rateLimit)
+            return currentExtension + rateLimit;
 
-        if (extensionError < -0.04)
-            return currentExtension - 0.04;
-
+        if (extensionError < -rateLimit)
+            return currentExtension - rateLimit;
 
         return output;
     }
 }
-
