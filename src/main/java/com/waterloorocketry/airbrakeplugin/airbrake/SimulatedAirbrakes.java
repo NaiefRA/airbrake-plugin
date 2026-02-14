@@ -70,7 +70,7 @@ public class SimulatedAirbrakes implements Airbrakes {
 
         double theta = extension * maxAngle;
         double rho = AirDensity.getAirDensityAtAltitude(altitude);
-        double CD= 2.5*Math.Sin(theta)*Sin(theta)+0.074*Math.Cos(theta);
+        double CD= 2.5*Math.sin(theta)*Math.sin(theta)+0.074*Math.cos(theta);
         
 
         return 0.5 * rho * velocity * velocity * this.cd * (airbrakesArea)*CD;
