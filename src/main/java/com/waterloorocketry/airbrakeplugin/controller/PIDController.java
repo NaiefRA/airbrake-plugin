@@ -1,7 +1,5 @@
 package com.waterloorocketry.airbrakeplugin.controller;
 
-import com.waterloorocketry.airbrakeplugin.jni.ProcessorCalculations;
-
 public class PIDController implements Controller {
 
     // -------------------------
@@ -36,16 +34,8 @@ public class PIDController implements Controller {
     public double calculateTargetExt(RocketState rocketState, double currentTime, double currentExtension,
             double rateLimit) {
 
-        // Compute lateral velocity magnitude
-        double vX = Math.sqrt(
-                rocketState.velocityX * rocketState.velocityX +
-                        rocketState.velocityY * rocketState.velocityY);
-
         // Predict where the rocket will coast to
-        float predictedApogee = ProcessorCalculations.getMaxAltitude(
-                (float) rocketState.velocityZ,
-                (float) vX,
-                (float) rocketState.positionZ);
+        double predictedApogee = TrajectoryPrediction.get_max_altitude(rocketState);
 
         // First loop iteration
         if (lastTime == -1) {
@@ -93,14 +83,6 @@ public class PIDController implements Controller {
         // -------------------------
 
         double extensionError = output - currentExtension;
-
-        // double th = 2; // 2%
-        // if (Math.abs(extensionError) < th) {
-        // return currentExtension;
-        // }
-
-        double maxRatePerSecond = 0.20; // 20% per second
-        double maxStep = maxRatePerSecond * dt;
 
         if (extensionError > rateLimit)
             return currentExtension + rateLimit;

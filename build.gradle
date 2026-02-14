@@ -38,47 +38,9 @@ sourceSets {
     }
 }
 
-compileJava {
-    options.compilerArgs += ['-h', file('src/main/include')]
-}
 
-task compileJNI {
-    dependsOn compileJava
 
-    doLast {
-        def buildDir = file('build/natives')
-        buildDir.mkdirs()
 
-        // 1. Configure CMake (Platform Detection)
-        exec {
-            workingDir buildDir
-            if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-                // Windows: Use defaults (usually Visual Studio) or specify "MinGW Makefiles" if using MinGW
-                commandLine 'cmake', '../..'
-            } else {
-                // Linux/Mac: Use Unix Makefiles
-                commandLine 'cmake', '-G', 'Unix Makefiles', '../..'
-            }
-        }
-
-        // 2. Build the native library using CMake's abstraction (works for Make, MSBuild, Ninja, etc.)
-        exec {
-            workingDir buildDir
-            commandLine 'cmake', '--build', '.', '--config', 'Release'
-        }
-    }
-}
-
-clean.doFirst {
-    delete fileTree('src/main/include') {
-        include 'com_waterloorocketry_airbrakeplugin_jni_ProcessorCalculations*.h'
-    }
-}
-
-// Ensure natives are compiled before processing resources (so they get added to the JAR)
-processResources {
-    dependsOn compileJNI
-}
 
 // OPTIONAL: Run task for testing inside Gradle
 tasks.register('run', JavaExec) {
