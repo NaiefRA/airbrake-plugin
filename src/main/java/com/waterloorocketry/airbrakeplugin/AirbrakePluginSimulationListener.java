@@ -109,6 +109,7 @@ public class AirbrakePluginSimulationListener extends AbstractSimulationListener
         double airbrakesDragForce = 0;
         double airbrakesCd = 0;
         double rocketCd = forces.getCDaxial();
+        double totalDrag = 0;
 
         if (isExtensionAllowed(status)) {
             // Get latest flight conditions and airbrake extension
@@ -142,7 +143,7 @@ public class AirbrakePluginSimulationListener extends AbstractSimulationListener
         // printing
         if (status.getSimulationTime() - lastPrintTime > 0.2) {
             System.out.printf(
-                    "Time: %6.2fs | Extended: %-5b | Ext: %3.0f%% | Drag Force: %6.2f N | Added Cd: %6.4f | Rocket Cd: %6.4f | Total Cd: %6.4f%n",
+                    "Time: %6.2fs | Extended: %-5b | Ext: %3.0f%% | Total Drag | Airbrakes Drag Force: %6.2f N | Added Cd: %6.4f | Rocket Cd: %6.4f | Total Cd: %6.4f%n",
                     status.getSimulationTime(), // Time
                     extension > 0, // Whether or not airbrakes are extended (True/False)
                     extension * 100, // Extension percentage (0-100%)

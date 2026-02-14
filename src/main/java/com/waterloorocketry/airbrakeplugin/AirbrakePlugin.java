@@ -21,19 +21,22 @@ import java.util.List;
  */
 public class AirbrakePlugin extends AbstractSimulationExtension {
     @Override
-    public String getName()
-    {
+    public String getName() {
         return "Airbrakes";
     }
 
     // Create new FlightDataType to hold airbrake extension percentage
-    private static final FlightDataType airbrakeExt = FlightDataType.getType("airbrakeExt", "airbrakeExt", UnitGroup.UNITS_RELATIVE);
-    // Create new FlightDataType to hold trajpred apogee output even though its not a flight data, this allows us to graph it
-    private static final FlightDataType predictedApogee = FlightDataType.getType("predictedApogee", "predictedApogee", UnitGroup.UNITS_DISTANCE);
+    private static final FlightDataType airbrakeExt = FlightDataType.getType("airbrakeExt", "airbrakeExt",
+            UnitGroup.UNITS_RELATIVE);
+    // Create new FlightDataType to hold trajpred apogee output even though its not
+    // a flight data, this allows us to graph it
+    private static final FlightDataType predictedApogee = FlightDataType.getType("predictedApogee", "predictedApogee",
+            UnitGroup.UNITS_DISTANCE);
     private static final ArrayList<FlightDataType> types = new ArrayList<FlightDataType>();
 
     /**
      * Initialize the new airbrakeExt datatype we created by returning it here
+     * 
      * @return
      */
     @Override
@@ -47,29 +50,36 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
     }
 
     /**
-     * Initialize this extension before simulations by adding the simulation listener.
+     * Initialize this extension before simulations by adding the simulation
+     * listener.
+     * 
      * @param conditions
      * @throws SimulationException
      */
     @Override
-    public void initialize(SimulationConditions conditions) throws SimulationException
-    {
+    public void initialize(SimulationConditions conditions) throws SimulationException {
         Controller controller;
 
-        // Use either PID or always-open controller depending on the configuration setting
+        // Use either PID or always-open controller depending on the configuration
+        // setting
         if (isAlwaysOpen()) {
             controller = new AlwaysOpenController(getAlwaysOpenExt());
         } else {
-            controller = new PIDController((float) getTargetApogee(), (float) getKp(), (float) getKi(), (float) getKd(), (float) getISatmax());
+            controller = new PIDController((float) getTargetApogee(), (float) getKp(), (float) getKi(), (float) getKd(),
+                    (float) getISatmax());
         }
 
         Airbrakes airbrakes = new SimulatedAirbrakes(getDragCoefficient());
-        Noise noise = isNoisy() ? new Noise(getStddevPositionZ(), getStddevVelocityX(), getStddevVelocityY(), getStddevVelocityZ()) : null;
-        conditions.getSimulationListenerList().add(new AirbrakePluginSimulationListener(airbrakes, controller, noise, getExtTime()));
+        Noise noise = isNoisy()
+                ? new Noise(getStddevPositionZ(), getStddevVelocityX(), getStddevVelocityY(), getStddevVelocityZ())
+                : null;
+        conditions.getSimulationListenerList()
+                .add(new AirbrakePluginSimulationListener(airbrakes, controller, noise, getExtTime()));
     }
 
     //
-    // Getter/setters for all the values that are user-adjustable via the plugin config panel
+    // Getter/setters for all the values that are user-adjustable via the plugin
+    // config panel
     // The setters are used indirectly in AirbrakePluginConfigurator
     //
 
@@ -127,9 +137,8 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
         fireChangeEvent();
     }
 
-
     public double getTargetApogee() {
-        return config.getDouble("targetApogee", 10000.0);
+        return config.getDouble("targetApogee", 3048.0);
     }
 
     public void setTargetApogee(double targetApogee) {
@@ -163,6 +172,7 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
         config.put("Kd", Kd);
         fireChangeEvent();
     }
+
     public double getISatmax() {
         return config.getDouble("ISatmax", 10.0);
     }

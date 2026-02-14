@@ -82,9 +82,20 @@ processResources {
 
 // OPTIONAL: Run task for testing inside Gradle
 tasks.register('run', JavaExec) {
+    // 1. Always build the latest JAR (with the C++ DLL) before running
     dependsOn jar
+    
     mainClass = 'net.sf.openrocket.startup.OpenRocket'
-    classpath = files('./OpenRocket-23.09.jar', tasks.jar)
+    
+    // 2. Put ONLY OpenRocket on the classpath to prevent double-loading crashes
+    classpath = files('./OpenRocket-23.09.jar')
+    
+    // 3. Force OpenRocket to load your freshly built JAR as a plugin
+    systemProperty 'openrocket.pluginpath', "${projectDir}/build/libs"
+    
+    // 4. Explicitly pipe standard output and errors to your VS Code terminal
+    standardOutput = System.out
+    errorOutput = System.err
 }
 
 tasks.register('tune', JavaExec) {
