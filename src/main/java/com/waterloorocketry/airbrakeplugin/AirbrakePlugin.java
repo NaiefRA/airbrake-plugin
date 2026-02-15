@@ -85,7 +85,7 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
     }
 
     public double getKp() {
-        return config.getDouble("Kp", 0.001724);
+        return config.getDouble("Kp", 0.001424);
     }
 
     public void setKp(double Kp) {
@@ -94,7 +94,7 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
     }
 
     public double getKi() {
-        return config.getDouble("Ki", 0.000754);
+        return config.getDouble("Ki", 0.0008);
     }
 
     public void setKi(double Ki) {
