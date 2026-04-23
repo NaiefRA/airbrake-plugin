@@ -141,7 +141,7 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
     }
 
     public double getK_smc() {
-        return config.getDouble("K_smc", 0.0);
+        return config.getDouble("K_smc", 1.0);
     }
 
     public void setK_smc(double K_smc) {
@@ -150,7 +150,7 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
     }
 
     public double getC() {
-        return config.getDouble("C", 0.0);
+        return config.getDouble("C", 0.4);
     }
 
     public void setC(double C) {
@@ -159,7 +159,7 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
     }
 
     public double getPhi() {
-        return config.getDouble("Phi", 0.0);
+        return config.getDouble("Phi", 5.0);
     }
 
     public void setPhi(double Phi) {

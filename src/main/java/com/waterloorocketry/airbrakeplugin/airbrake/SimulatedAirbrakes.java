@@ -32,8 +32,6 @@
 //         // 1. Get Air Density at current altitude (using existing project utility)
 //         double density = AirDensity.getAirDensityAtAltitude(altitude);
 
-//         // TODO  CALC CD from extension
-
 //         // 3. Calculate Drag Force
 //         // Formula: 1/2 * density * velocity^2 * Cd * Area
 //         return 0.5 * density * velocity * velocity * CD * MAX_AREA;
