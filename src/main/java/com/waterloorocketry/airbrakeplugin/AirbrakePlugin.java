@@ -3,10 +3,10 @@ package com.waterloorocketry.airbrakeplugin;
 import com.waterloorocketry.airbrakeplugin.airbrake.Airbrakes;
 
 import com.waterloorocketry.airbrakeplugin.airbrake.SimulatedAirbrakes;
-import com.waterloorocketry.airbrakeplugin.controller.AlwaysOpenController;
 import com.waterloorocketry.airbrakeplugin.controller.Controller;
 import com.waterloorocketry.airbrakeplugin.controller.PIDController;
-import com.waterloorocketry.airbrakeplugin.simulated.Noise;
+import com.waterloorocketry.airbrakeplugin.controller.SMCController;
+// import com.waterloorocketry.airbrakeplugin.simulated.Noise;
 import net.sf.openrocket.simulation.SimulationConditions;
 import net.sf.openrocket.simulation.exception.SimulationException;
 import net.sf.openrocket.simulation.extension.AbstractSimulationExtension;
@@ -62,6 +62,8 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
 
         controller = new PIDController((float) getTargetApogee(), (float) getKp(), (float) getKi(), (float) getKd(),
                 (float) getISatmax());
+
+        controller = new SMCController((float) getTargetApogee(), (float) getC(), (float) getK_smc(), (float) getPhi());
 
         Airbrakes airbrakes = new SimulatedAirbrakes();
 
@@ -136,5 +138,32 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
 
     public double getRateLimit() {
         return config.getDouble("RateLimit", 0.033);
+    }
+
+    public double getK_smc() {
+        return config.getDouble("K_smc", 0.0);
+    }
+
+    public void setK_smc(double K_smc) {
+        config.put("K_smc", K_smc);
+        fireChangeEvent();
+    }
+
+    public double getC() {
+        return config.getDouble("C", 0.0);
+    }
+
+    public void setC(double C) {
+        config.put("C", C);
+        fireChangeEvent();
+    }
+
+    public double getPhi() {
+        return config.getDouble("Phi", 0.0);
+    }
+
+    public void setPhi(double Phi) {
+        config.put("Phi", Phi);
+        fireChangeEvent();
     }
 }

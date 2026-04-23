@@ -2,7 +2,7 @@ package com.waterloorocketry.airbrakeplugin;
 
 import net.sf.openrocket.document.Simulation;
 import net.sf.openrocket.gui.SpinnerEditor;
-import net.sf.openrocket.gui.adaptors.BooleanModel;
+// import net.sf.openrocket.gui.adaptors.BooleanModel;
 import net.sf.openrocket.gui.adaptors.DoubleModel;
 import net.sf.openrocket.gui.components.UnitSelector;
 import net.sf.openrocket.plugin.Plugin;
@@ -32,16 +32,22 @@ public class AirbrakePluginConfigurator extends AbstractSwingSimulationExtension
         // actual max
         addRow("Target apogee", "TargetApogee", 1.0, UnitGroup.UNITS_DISTANCE, 0.0, 100000);
 
-        addRow("Kp*1000", "Kp", 1000.0, UnitGroup.UNITS_COEFFICIENT, 0.0, 100);
-        addRow("Ki*1000", "Ki", 1000.0, UnitGroup.UNITS_COEFFICIENT, 0.0, 100);
-        addRow("Kd*1000", "Kd", 1000.0, UnitGroup.UNITS_COEFFICIENT, 0.0, 100);
-        addRow("ISatmax", "ISatmax", 1.0, UnitGroup.UNITS_COEFFICIENT, 0.0, 100);
+        // addRow("Kp*1000", "Kp", 1000.0, UnitGroup.UNITS_COEFFICIENT, 0.0, 100);
+        // addRow("Ki*1000", "Ki", 1000.0, UnitGroup.UNITS_COEFFICIENT, 0.0, 100);
+        // addRow("Kd*1000", "Kd", 1000.0, UnitGroup.UNITS_COEFFICIENT, 0.0, 100);
+        // addRow("ISatmax", "ISatmax", 1.0, UnitGroup.UNITS_COEFFICIENT, 0.0, 100);
+
+        addRow("K_smc", "K_smc", 1.0, UnitGroup.UNITS_COEFFICIENT, 0.0, 3);
+        addRow("c", "C", 1.0, UnitGroup.UNITS_COEFFICIENT, 0.0, 2);
+        addRow("Phi", "Phi", 1.0, UnitGroup.UNITS_COEFFICIENT, 0.0, 1000);
 
         // Extension must be within 0-100%
 
-        addRow("Extend lockout time", "ExtTime", 1.0, UnitGroup.UNITS_FLIGHT_TIME, 0.0, 30.0);
+        addRow("Extend lockout time", "ExtTime", 1.0, UnitGroup.UNITS_FLIGHT_TIME,
+                0.0, 30.0);
 
-        addRow("Rate Limit", "RateLimit", 1.0, UnitGroup.UNITS_COEFFICIENT, 0.0, 30.0);
+        addRow("Rate Limit", "RateLimit", 1.0, UnitGroup.UNITS_COEFFICIENT, 0.0,
+                30.0);
 
         return panel;
     }
