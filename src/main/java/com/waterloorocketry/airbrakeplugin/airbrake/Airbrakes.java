@@ -8,11 +8,13 @@ package com.waterloorocketry.airbrakeplugin.airbrake;
  */
 public interface Airbrakes {
     /**
-     * Returns the coefficient of drag of the rocket based on the airbrakes extension amount
+     * Returns the coefficient of drag of the rocket based on the airbrakes
+     * extension amount
+     * 
      * @param extension Airbrakes extension value from 0 to 1 inclusive
-     * @param velocity Upwards velocity of the rocket in m/s
-     * @param altitude Altitude of the rocket in m
+     * @param velocity  Upwards velocity of the rocket in m/s
+     * @param altitude  Altitude of the rocket in m
      * @return The CD value
      */
-    double calculateDragForce(double extension, double velocity, double altitude);
+    double calculateDragCoefficient(double extension, double velocity, double altitude);
 }

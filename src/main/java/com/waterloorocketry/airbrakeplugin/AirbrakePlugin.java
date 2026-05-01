@@ -159,7 +159,7 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
     }
 
     public double getPhi() {
-        return config.getDouble("Phi", 5.0);
+        return config.getDouble("Phi", 1.0);
     }
 
     public void setPhi(double Phi) {

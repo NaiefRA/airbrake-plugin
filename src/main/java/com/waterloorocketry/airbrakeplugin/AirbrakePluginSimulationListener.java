@@ -36,39 +36,35 @@ public class AirbrakePluginSimulationListener extends AbstractSimulationListener
         this.airbrakes = airbrakes;
         this.controller = controller;
         this.extTime = extTime;
-        this.rateLimit = rateLimit; // 3. SAVE IT
+        this.rateLimit = rateLimit;
     }
 
     // Airbrakes only allowed between the given time (default 9 s) and while
     // vertical velocity > 34 m/s
     private boolean isExtensionAllowed(SimulationStatus status) {
-        return status.getSimulationTime() > extTime && status.getRocketVelocity().z > 34.0;
+        return status.getSimulationTime() > extTime && status.getRocketVelocity().z > 15.0;
     }
 
     /**
      * Runs before each timestep.
-     * 
-     * @param status
-     * @return
      */
     @Override
     public boolean preStep(SimulationStatus status) {
         FlightDataBranch flightData = status.getFlightData();
         Controller.RocketState data = new Controller.RocketState(status);
 
-        // Add gaussian noise to the "measured" state data if enabled
-
-        // Only run controller during coast phase. If not in coast, still set ext to 0
-        // (better than NaN)
+        // Only run controller during coast phase.
         if (isExtensionAllowed(status)) {
             ext = controller.calculateTargetExt(data, status.getSimulationTime(), ext, rateLimit);
             if (!(0.0 <= ext && ext <= 1.0)) {
-                throw new IndexOutOfBoundsException("airbrakes extension amount was not from 0 to 1");
+                throw new IndexOutOfBoundsException("airbrakes extension amount was not from 0 to 1: " + ext);
             }
-            flightData.setValue(airbrakeExtDataType, ext);
         } else {
-            flightData.setValue(airbrakeExtDataType, 0);
+            // Graceful retraction respecting the rate limit
+            ext = Math.max(0.0, ext - rateLimit);
         }
+
+        flightData.setValue(airbrakeExtDataType, ext);
 
         // This is solely for graphing trajectory prediction outputs
         flightData.setValue(predictedApogeeDataType, TrajectoryPrediction.get_max_altitude(data));
@@ -81,9 +77,6 @@ public class AirbrakePluginSimulationListener extends AbstractSimulationListener
      */
     private FlightConditions flightConditions = null;
 
-    // We can't look at status.getFlightData() for anything except extension instead
-    // because it would
-    // apply to the last timestep
     @Override
     public FlightConditions postFlightConditions(SimulationStatus status, FlightConditions flightConditions)
             throws SimulationException {
@@ -99,49 +92,28 @@ public class AirbrakePluginSimulationListener extends AbstractSimulationListener
     public AerodynamicForces postAerodynamicCalculation(SimulationStatus status, AerodynamicForces forces)
             throws SimulationException {
 
-        double extension = 0;
-        double airbrakesDragForce = 0;
-        double airbrakesCd = 0;
+        double extension = status.getFlightData().getLast(airbrakeExtDataType);
         double rocketCd = forces.getCDaxial();
+        double totalCD = 0;
 
-        if (isExtensionAllowed(status)) {
-            // Get latest flight conditions and airbrake extension
+        // Apply drag whenever airbrakes are physically extended,
+        // even if the controller is retracting them due to low velocity
+        if (extension > 0.0) {
             final double velocityZ = status.getRocketVelocity().z;
-            extension = status.getFlightData().getLast(airbrakeExtDataType);
             final double altitude = status.getRocketPosition().z
                     + status.getSimulationConditions().getLaunchSite().getAltitude();
 
-            airbrakesDragForce = airbrakes.calculateDragForce(extension, velocityZ, altitude);
-
-            // now calculating Cd from the airbrakes (using force calculated inputted (for
-            // flat plate theory))
-            double density = flightConditions.getAtmosphericConditions().getDensity();
-            double refArea = flightConditions.getRefArea();
-
-            double velocitySq = status.getRocketVelocity().length2();
-
-            double dynamicPressure = 0.5 * density * velocitySq;
-            double totalCd = forces.getCDaxial(); // cd from openrocket
-
-            if (dynamicPressure > 0.0001) {
-                airbrakesCd = (airbrakesDragForce / (dynamicPressure * refArea));
-
-                totalCd = totalCd + airbrakesCd;
-            }
-
-            // OR CD + Calculated Airbrakes CD
-            forces.setCDaxial(totalCd);
+            totalCD = airbrakes.calculateDragCoefficient(extension, velocityZ, altitude);
+            forces.setCDaxial(totalCD);
         }
 
         // printing
         if (status.getSimulationTime() - lastPrintTime > 0.2) {
             System.out.printf(
-                    "Time: %6.2fs | Extended: %-5b | Ext: %3.0f%% | Total Drag | Airbrakes Drag Force: %6.2f N | Added Cd: %6.4f | Rocket Cd: %6.4f | Total Cd: %6.4f%n",
+                    "Time: %6.2fs | Extended: %-5b | Ext: %3.0f%% | Rocket Cd: %6.4f | Total Cd: %6.4f%n",
                     status.getSimulationTime(), // Time
                     extension > 0, // Whether or not airbrakes are extended (True/False)
                     extension * 100, // Extension percentage (0-100%)
-                    airbrakesDragForce, // Drag Force in Newtons
-                    airbrakesCd, // The Coefficient added to the rocket
                     rocketCd, // OR Cd
                     forces.getCDaxial() // total Cd
             );
