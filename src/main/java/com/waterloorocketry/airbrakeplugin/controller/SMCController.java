@@ -47,6 +47,7 @@ public class SMCController implements Controller {
         }
 
         double dt = currentTime - lastTime;
+
         if (dt <= 0) {
             return currentExtension;
         }
