@@ -20,52 +20,52 @@ public class SMCController implements Controller {
     public double calculateTargetExt(RocketState rocketState, double currentTime, double currentExtension,
             double rateLimit) {
 
-        // Predict where the rocket will coast to
-        double predictedApogee = TrajectoryPrediction.get_max_altitude(rocketState);
+        double h = rocketState.positionZ;
 
-        // First loop iteration
+        double vMag = Math.sqrt(
+                rocketState.velocityX * rocketState.velocityX +
+                        rocketState.velocityY * rocketState.velocityY +
+                        rocketState.velocityZ * rocketState.velocityZ);
+
+        double inclDeg = 0.0;
+        if (vMag > 0.0) {
+            inclDeg = Math.toDegrees(Math.acos(rocketState.velocityZ / vMag));
+        }
+
+        double deltaH = TrajectoryPrediction.get_apogee_delta(h, vMag, 30.0, inclDeg);
+
+        double predictedApogee = h + deltaH;
+        double error = predictedApogee - targetAltitude;
+
+        System.out.printf(
+                "Predicted Apogee: %6.2f \n", predictedApogee);
+
         if (lastTime == -1) {
             lastTime = currentTime;
+            lastError = error;
             return 0.0;
         }
 
-        // Compute dt
         double dt = currentTime - lastTime;
-        if (dt <= 0)
+        if (dt <= 0) {
             return currentExtension;
+        }
 
-        // Error term (positive means overshooting target)
-        double error = predictedApogee - targetAltitude;
         double error_dot = (error - lastError) / dt;
-
-        // SMC Logic
-
         double S = c * error + error_dot;
 
         double output = K_smc * Math.tanh(S / Phi);
 
-        // update for next loop
         lastError = error;
         lastTime = currentTime;
 
-        // Clamp output to physical limits
-        if (output > 1.0)
-            output = 1.0;
-        if (output < 0.0)
-            output = 0.0;
-
-        // -------------------------
-        // STABILITY FILTERS
-        // -------------------------
-
         double extensionError = output - currentExtension;
+        if (extensionError > rateLimit) {
+            output = currentExtension + rateLimit;
+        } else if (extensionError < -rateLimit) {
+            output = currentExtension - rateLimit;
+        }
 
-        if (extensionError > rateLimit)
-            return currentExtension + rateLimit;
-
-        if (extensionError < -rateLimit)
-            return currentExtension - rateLimit;
-
-        return output;
+        return Math.max(0.0, Math.min(1.0, output));
     }
 }

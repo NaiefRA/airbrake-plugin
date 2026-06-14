@@ -137,7 +137,7 @@ public class AirbrakePlugin extends AbstractSimulationExtension {
     }
 
     public double getRateLimit() {
-        return config.getDouble("RateLimit", 0.033);
+        return config.getDouble("RateLimit", 0.013);
     }
 
     public double getK_smc() {

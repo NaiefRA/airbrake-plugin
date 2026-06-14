@@ -2,10 +2,6 @@ package com.waterloorocketry.airbrakeplugin.controller;
 
 public class PIDController implements Controller {
 
-    // -------------------------
-    // Fields
-    // -------------------------
-
     private final float targetAltitude;
     private final float Kp;
     private final float Ki;
@@ -16,9 +12,6 @@ public class PIDController implements Controller {
     private double integralSum = 0;
     private double lastTime = -1;
 
-    // -------------------------
-    // Constructor
-    // -------------------------
     public PIDController(float targetAltitude, float Kp, float Ki, float Kd, float iLimit) {
         this.targetAltitude = targetAltitude;
         this.Kp = Kp;
@@ -27,34 +20,37 @@ public class PIDController implements Controller {
         this.iLimit = iLimit;
     }
 
-    // -------------------------
-    // PID Controller Method
-    // -------------------------
     @Override
     public double calculateTargetExt(RocketState rocketState, double currentTime, double currentExtension,
             double rateLimit) {
 
-        // Predict where the rocket will coast to
-        double predictedApogee = TrajectoryPrediction.get_max_altitude(rocketState);
+        double h = rocketState.positionZ;
+        double vMag = Math.sqrt(
+                rocketState.velocityX * rocketState.velocityX +
+                        rocketState.velocityY * rocketState.velocityY +
+                        rocketState.velocityZ * rocketState.velocityZ);
 
-        // First loop iteration
+        double inclDeg = 0.0;
+        if (vMag > 0.0) {
+            inclDeg = Math.toDegrees(Math.acos(rocketState.velocityZ / vMag));
+        }
+
+        // 30.0 degrees corresponds to the 0.5 extension baseline
+        double deltaH = TrajectoryPrediction.get_apogee_delta(h, vMag, 30.0, inclDeg);
+        double predictedApogee = h + deltaH;
         if (lastTime == -1) {
             lastTime = currentTime;
             return 0.0;
         }
 
-        // Compute dt
         double dt = currentTime - lastTime;
         if (dt <= 0)
             return currentExtension;
 
-        // Error term (positive means overshooting target)
         double error = predictedApogee - targetAltitude;
 
-        // PID Components
         double pTerm = Kp * error;
 
-        // Integral term with anti-windup
         integralSum += error * dt;
         if (integralSum > iLimit)
             integralSum = iLimit;
@@ -62,25 +58,18 @@ public class PIDController implements Controller {
             integralSum = -iLimit;
         double iTerm = Ki * integralSum;
 
-        // Derivative term
         double derivative = (error - lastError) / dt;
         double dTerm = Kd * derivative;
 
-        // PID Output (0–1 airbrake extension)
         double output = pTerm + iTerm + dTerm;
 
         lastError = error;
         lastTime = currentTime;
 
-        // Clamp output to physical limits
         if (output > 1.0)
             output = 1.0;
         if (output < 0.0)
             output = 0.0;
-
-        // -------------------------
-        // STABILITY FILTERS
-        // -------------------------
 
         double extensionError = output - currentExtension;
 
